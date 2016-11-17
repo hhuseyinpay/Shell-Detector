@@ -126,7 +126,7 @@ class ShellDetector(threading.Thread):
 
     def remote(self):
         if self._remotefingerprint is True:
-            self.alert('Please note we are using remote shell database', 'yellow')
+            #self.alert('Please note we are using remote shell database', 'yellow')
             url = 'https://raw.github.com/emposha/PHP-Shell-Detector/master/shelldetect.db'
             self._fingerprints = urllib2.urlopen(url).read()
             try:
@@ -145,41 +145,27 @@ class ShellDetector(threading.Thread):
                     print("({})".format(e))
 
     def start(self):
-        self.header()
+        #self.header()
 
         #start
         self.remote()
-        self.version()
+        #self.version()
         self.filescan()
         self.anaylize()
         #end
 
-        self.footer()
+        #self.footer()
         return None
 
     def anaylize(self):
-        _counter = 0
         _regex = re.compile(self._regex)
         for _filename in self._files:
             _content = open(_filename, 'rt', -1).read()
             _filename = re.sub('.#', '', _filename)
             _match = _regex.findall(_content)
-            if _match:
-                self.getfileinfo(_filename)
-                if self._showlinenumbers is True:
-                    _lines = _content.split("\n")
-                    _linecounter = 1
-                    for _line in _lines:
-                        _match_line = _regex.findall(_line)
-                        if _match_line:
-                            self.alert('   Suspicious function used: ' + _match_line.__str__() + '(line: ' + str( _linecounter) + ')')
-                        _linecounter += 1
-                else:
-                    self.alert('   Suspicious functions used: ' + _match.__str__())
-                _counter += 1
             self.fingerprint(_filename, _content)
         self.alert('=======================================================', 'yellow')
-        self.alert('Status: ' + str(_counter) + ' suspicious files and ' + str(len(self._badfiles)) + ' shells', 'red')
+        self.alert(str(len(self._badfiles)) + ' shell bulundu', 'red')
 
     def _get_precomputed_fingerprints(self):
         if not hasattr(self, '_precomputed_fingerprints'):
@@ -199,13 +185,7 @@ class ShellDetector(threading.Thread):
                 self._badfiles.append([_filename])
                 _regex_shell = re.compile('^(.+?)\[(.+?)\]\[(.+?)\]\[(.+?)\]')
                 _match_shell = list(_regex_shell.findall(shellname)[0])
-                _shell_note = ''
-                if _match_shell[2] == 1:
-                    _shell_note = 'please note it`s a malicious file not a shell'
-                elif _match_shell[2] == 2:
-                    _shell_note = 'please note potentially dangerous file (legit file but may be used by hackers)'
-                _shellflag = _match_shell[0] + '(' + _match_shell[3] + ')'
-                self.alert('   Fingerprint: Positive, it`s a ' + str(_shellflag) + ' ' + _shell_note, 'red')
+		self.getfileinfo(_filename)
 
     def unpack(self):
         """ Need to work on it"""
@@ -213,17 +193,17 @@ class ShellDetector(threading.Thread):
 
     def getfileinfo(self, _file):
         (mode, ino, dev, nlink, uid, gid, size, atime, mtime, ctime) = os.stat(_file)
-        self.alert('')
-        self.alert('=======================================================', 'yellow')
-        self.alert('')
-        self.alert('   Suspicious behavior found in: ' + _file)
-        self.alert('   Full path:     ' + os.path.abspath(_file))
-        self.alert('   Owner:         ' + str(uid) + ':' + str(gid))
-        self.alert('   Permission:    ' + oct(mode)[-3:])
-        self.alert('   Last accessed: ' + time.ctime(atime))
-        self.alert('   Last modified: ' + time.ctime(mtime))
-        self.alert('   Filesize:      ' + self.sizeof_fmt(size))
-        self.alert('')
+        #self.alert('')
+        #self.alert('=======================================================', 'yellow')
+        #self.alert('')
+        #self.alert('   Suspicious behavior found in: ' + _file)
+	self.alert(os.path.abspath(_file))
+        #self.alert('   Owner:         ' + str(uid) + ':' + str(gid))
+        #self.alert('   Permission:    ' + oct(mode)[-3:])
+        #self.alert('   Last accessed: ' + time.ctime(atime))
+        #self.alert('   Last modified: ' + time.ctime(mtime))
+        #self.alert('   Filesize:      ' + self.sizeof_fmt(size))
+        #self.alert('==========================================================')
 
     def sizeof_fmt(self, num):
         for x in ['bytes', 'KB', 'MB', 'GB', 'TB']:
@@ -259,16 +239,14 @@ class ShellDetector(threading.Thread):
                 self.alert('New version of application found. Please update!', 'red')
 
     def filescan(self):
-        self.alert('Starting file scanner, please be patient file scanning can take some time.')
-        self.alert('Number of known shells in database is: ' + str(len(self._fingerprints)))
         self.listdir()
-        self.alert('File scan done, we have: ' + str(len(self._files)) + ' files to analyze')
 
     def listdir(self):
         for root, dirnames, filenames in os.walk(self._directory):
-            for extension in self._extension:
-                for filename in fnmatch.filter(filenames, '*.' + extension):
-                    self._files.append(os.path.join(root, filename))
+            if "/com_jce/" or "" or "/editors/jce/" not in root:
+                for extension in self._extension:
+		            for filename in fnmatch.filter(filenames, '*.' + extension):
+				        self._files.append(os.path.join(root, filename))
         return None
 
     def header(self):
@@ -350,3 +328,4 @@ if len(sys.argv) == 1:
 else:
     shell = ShellDetector(options)
     shell.start()
+
